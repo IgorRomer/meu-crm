@@ -71,7 +71,7 @@ async def _execute_step(db: Session, enrollment: NurtureEnrollment):
         lead_id=enrollment.lead_id,
         type=f"nurture_{step.type.value}",
         description=f"[{sequence.name}] Passo {enrollment.current_step + 1}: {step.subject or step.type.value}",
-        metadata={"sequence_id": sequence.id, "step_order": step.order},
+        extra_data={"sequence_id": sequence.id, "step_order": step.order},
     ))
 
     # Advance to next step

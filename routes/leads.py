@@ -118,7 +118,7 @@ async def update_lead(
         lead_id=lead.id,
         type="updated",
         description="Lead atualizado",
-        metadata=updates,
+        extra_data=updates,
     ))
     db.commit()
     db.refresh(lead)

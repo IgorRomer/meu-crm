@@ -120,7 +120,7 @@ class Activity(Base):
     lead_id     = Column(Integer, ForeignKey("leads.id"), nullable=False, index=True)
     type        = Column(String(50))   # note, email, call, whatsapp, stage_change, webhook
     description = Column(Text)
-    metadata    = Column(JSON, default={})
+    extra_data  = Column(JSON, default={})
     created_at  = Column(DateTime(timezone=True), server_default=func.now())
 
     lead = relationship("Lead", back_populates="activities")
@@ -206,7 +206,7 @@ class NurtureStep(Base):
     subject     = Column(String(300))           # for email
     body        = Column(Text)
     delay_hours = Column(Integer, default=0)    # wait delay
-    metadata    = Column(JSON, default={})
+    extra_data  = Column(JSON, default={})
 
     sequence = relationship("NurtureSequence", back_populates="steps")
 

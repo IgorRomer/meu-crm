@@ -120,7 +120,7 @@ async def meta_receive(request: Request, db: Session = Depends(get_db)):
                 lead_id=lead.id,
                 type="meta_import",
                 description=f"Lead importado do Facebook Lead Ads (form: {form_id})",
-                metadata={"form_id": form_id, "ad_id": ad_id, "page_id": page_id},
+                extra_data={"form_id": form_id, "ad_id": ad_id, "page_id": page_id},
             ))
 
             leads_created.append(lead)

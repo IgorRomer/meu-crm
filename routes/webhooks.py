@@ -217,7 +217,7 @@ async def receive_inbound_webhook(
         lead_id=lead.id,
         type="webhook_inbound",
         description=f"Lead recebido via webhook inbound (slug: {slug})",
-        metadata={"slug": slug, "raw": request_body},
+        extra_data={"slug": slug, "raw": request_body},
     ))
     db.commit()
 
