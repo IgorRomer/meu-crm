@@ -15,7 +15,9 @@ Endpoints:
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
+import os
 
 from database import engine
 from models import Base
@@ -99,14 +101,12 @@ app.include_router(meta.router)
 
 # ─── HEALTH CHECK ─────────────────────────────────────────────────────────────
 
-@app.get("/", tags=["health"])
+@app.get("/", tags=["frontend"])
 def root():
-    return {
-        "status": "online",
-        "service": "CRM Backend",
-        "version": "1.0.0",
-        "docs": "/docs",
-    }
+    frontend = os.path.join(os.path.dirname(__file__), "frontend.html")
+    if os.path.exists(frontend):
+        return FileResponse(frontend, media_type="text/html")
+    return {"status": "online", "service": "CRM Backend", "version": "1.0.0", "docs": "/docs"}
 
 @app.get("/health", tags=["health"])
 def health():
