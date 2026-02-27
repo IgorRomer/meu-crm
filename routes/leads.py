@@ -104,6 +104,7 @@ async def update_lead(
     payload: LeadUpdate,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     lead = db.query(Lead).filter(Lead.id == lead_id, Lead.is_active == True).first()
     if not lead:
@@ -117,8 +118,8 @@ async def update_lead(
     db.add(Activity(
         lead_id=lead.id,
         type="updated",
-        description="Lead atualizado",
-        extra_data=updates,
+        description=f"Status alterado para {lead.status.value}" if 'status' in updates else "Lead atualizado",
+        extra_data={k: (v.value if hasattr(v, 'value') else str(v)) for k, v in updates.items()},
     ))
     db.commit()
     db.refresh(lead)
