@@ -21,7 +21,7 @@ import os
 
 from database import engine
 from models import Base
-from routes import leads, webhooks, meta, pipeline
+from routes import leads, webhooks, meta, pipeline, auth
 
 
 # ─── STARTUP / SHUTDOWN ───────────────────────────────────────────────────────
@@ -93,6 +93,7 @@ app.add_middleware(
 
 # ─── ROUTERS ──────────────────────────────────────────────────────────────────
 
+app.include_router(auth.router)
 app.include_router(leads.router)
 app.include_router(pipeline.router)
 app.include_router(webhooks.router)

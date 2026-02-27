@@ -159,6 +159,27 @@
   .kanban-col.drag-over{border-color:var(--accent)!important;background:rgba(79,124,255,.06)!important}
   .kanban-card[draggable=true]{cursor:grab}
   .kanban-card[draggable=true]:active{cursor:grabbing}
+
+  /* ─── LOGIN SCREEN ─── */
+  .login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999}
+  .login-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;width:380px;text-align:center}
+  .login-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+  .login-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
+  .login-form{display:flex;flex-direction:column;gap:12px;text-align:left}
+  .login-btn{width:100%;padding:12px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:15px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:4px;transition:all .2s}
+  .login-btn:hover{background:#3d6bee;transform:translateY(-1px)}
+  .login-err{color:var(--danger);font-size:13px;text-align:center;min-height:20px}
+  .user-chip{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px 4px 4px;cursor:pointer}
+  .user-chip:hover{border-color:var(--danger)}
+  .user-chip-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent4));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+  .user-chip-name{font-size:12px;font-weight:500}
+  /* ─── USERS PAGE ─── */
+  .users-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+  .user-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;transition:all .2s}
+  .user-card:hover{border-color:var(--accent)}
+  .user-role-badge{font-size:11px;padding:3px 10px;border-radius:20px}
+  .role-admin{background:rgba(168,85,247,.15);color:var(--accent4)}
+  .role-vendedor{background:rgba(79,124,255,.15);color:var(--accent)}
   .fade-in{animation:fadeIn .3s ease}
   @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
   .pulse{animation:pulse 2s infinite}
@@ -167,6 +188,21 @@
 </style>
 </head>
 <body>
+
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">CRM PRO</div>
+    <div class="login-sub">Faça login para continuar</div>
+    <div class="login-form">
+      <div class="form-group"><label>EMAIL</label><input id="loginEmail" type="email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="form-group"><label>SENHA</label><input id="loginPassword" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="login-err" id="loginErr"></div>
+      <button class="login-btn" onclick="doLogin()" id="loginBtn">Entrar</button>
+    </div>
+  </div>
+</div>
 
 <!-- SIDEBAR -->
 <div class="sidebar">
@@ -180,6 +216,7 @@
   <div class="nav-item" onclick="nav('webhooks',this)">🪝 Webhooks</div>
   <div class="nav-section">INTEGRAÇÃO</div>
   <div class="nav-item" onclick="nav('meta',this)">🔗 Meta Ads</div>
+  <div class="nav-item" onclick="nav('users',this)" id="navUsers" style="display:none">👤 Usuários</div>
   <div class="nav-item" onclick="nav('config',this)">⚙️ Configurações</div>
   <div class="sidebar-footer" id="apiStatus">
     <span class="status-dot disconnected" id="apiDot" style="display:inline-block;margin-right:6px"></span>
@@ -322,6 +359,16 @@
       </div>
     </div>
 
+
+    <!-- USERS -->
+    <div class="page fade-in" id="page-users">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div><h2 style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700">Equipe de Vendas</h2><p style="font-size:13px;color:var(--muted);margin-top:4px">Gerencie os acessos da sua equipe</p></div>
+        <button class="btn btn-primary" onclick="openModal('createUserModal')">+ Novo Usuário</button>
+      </div>
+      <div class="users-grid" id="usersGrid"><div class="empty-state"><div class="spinner"></div></div></div>
+    </div>
+
     <!-- CONFIG -->
     <div class="page fade-in" id="page-config">
       <div class="two-col">
@@ -431,15 +478,103 @@
   </div>
 </div>
 
+
+<!-- CREATE USER -->
+<div class="modal-overlay" id="createUserModal" onclick="if(event.target===this)closeModal('createUserModal')">
+  <div class="modal modal-sm">
+    <button class="modal-close" onclick="closeModal('createUserModal')">✕</button>
+    <div class="modal-title">Novo Usuário</div>
+    <div class="modal-sub">Criar acesso para membro da equipe</div>
+    <div class="form-grid">
+      <div class="form-group full"><label>NOME COMPLETO</label><input id="u_name" placeholder="João Silva"></div>
+      <div class="form-group full"><label>EMAIL</label><input id="u_email" type="email" placeholder="joao@empresa.com"></div>
+      <div class="form-group"><label>SENHA</label><input id="u_password" type="password" placeholder="Mínimo 6 caracteres"></div>
+      <div class="form-group"><label>PERFIL</label>
+        <select id="u_role"><option value="vendedor">Vendedor</option><option value="admin">Admin</option></select>
+      </div>
+    </div>
+    <div class="form-actions"><button class="btn btn-ghost" onclick="closeModal('createUserModal')">Cancelar</button><button class="btn btn-primary" onclick="submitCreateUser()">Criar Usuário</button></div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"><div class="toast-title" id="toastTitle"></div><div id="toastMsg"></div></div>
 
 <script>
 // ═══════════════════════ CONFIG ═══════════════════════
-// Auto-detecta a URL: se servido pelo Railway usa a mesma origem, senão usa localStorage ou localhost
+// Auto-detecta a URL
 let API_BASE = (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
   ? window.location.origin
   : (localStorage.getItem('crm_api_url') || 'http://localhost:8000');
+
+let _currentUser = null;
+let _token = localStorage.getItem('crm_token') || null;
+
+// ═══════════════════════ AUTH ═══════════════════════
+async function doLogin() {
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl    = document.getElementById('loginErr');
+  const btn      = document.getElementById('loginBtn');
+  if (!email || !password) { errEl.textContent = 'Preencha email e senha'; return; }
+  btn.textContent = 'Entrando...'; btn.disabled = true; errEl.textContent = '';
+  try {
+    const form = new URLSearchParams();
+    form.append('username', email);
+    form.append('password', password);
+    const res = await fetch(API_BASE + '/auth/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: form
+    });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Erro'); }
+    const data = await res.json();
+    _token = data.access_token;
+    _currentUser = data.user;
+    localStorage.setItem('crm_token', _token);
+    showApp();
+  } catch(e) {
+    errEl.textContent = e.message;
+    btn.textContent = 'Entrar'; btn.disabled = false;
+  }
+}
+
+function logout() {
+  _token = null; _currentUser = null;
+  localStorage.removeItem('crm_token');
+  location.reload();
+}
+
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  // Show users nav only for admin
+  if (_currentUser?.role === 'admin') {
+    document.getElementById('navUsers').style.display = 'flex';
+  }
+  // Update avatar with user name
+  const initials = (_currentUser?.name || 'U').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  document.querySelector('.avatar').textContent = initials;
+  document.querySelector('.avatar').title = _currentUser?.name || '';
+  // Replace avatar click to show logout
+  document.querySelector('.avatar').onclick = () => {
+    if(confirm(`Sair da conta de ${_currentUser?.name}?`)) logout();
+  };
+  document.querySelector('.avatar').style.cursor = 'pointer';
+  checkApiHealth();
+  loadDashboard();
+}
+
+async function checkAuthAndInit() {
+  if (!_token) { return; } // stay on login
+  try {
+    const res = await fetch(API_BASE + '/auth/me', {
+      headers: {'Authorization': 'Bearer ' + _token}
+    });
+    if (!res.ok) { localStorage.removeItem('crm_token'); _token = null; return; }
+    _currentUser = await res.json();
+    showApp();
+  } catch { }
+}
 document.addEventListener('DOMContentLoaded', () => {
   const inp = document.getElementById('configApiUrl');
   if (inp) inp.value = API_BASE;
@@ -457,8 +592,9 @@ const fmtDate = d => d ? new Date(d).toLocaleDateString('pt-BR') : '—';
 // ═══════════════════════ API CALLS ═══════════════════════
 async function api(path, opts={}) {
   try {
+    const authHeader = _token ? {'Authorization': 'Bearer ' + _token} : {};
     const res = await fetch(API_BASE + path, {
-      headers: {'Content-Type':'application/json', ...opts.headers},
+      headers: {'Content-Type':'application/json', ...authHeader, ...opts.headers},
       ...opts,
       body: opts.body ? JSON.stringify(opts.body) : undefined
     });
@@ -487,7 +623,7 @@ async function checkApiHealth() {
 }
 
 // ═══════════════════════ NAVIGATION ═══════════════════════
-const pageTitles = {dashboard:'Dashboard',kanban:'Pipeline de Vendas',leads:'Gestão de Leads',nurture:'Nutrição Automática',webhooks:'Webhooks de Saída',meta:'Integração Meta Ads',config:'Configurações'};
+const pageTitles = {dashboard:'Dashboard',kanban:'Pipeline de Vendas',leads:'Gestão de Leads',nurture:'Nutrição Automática',webhooks:'Webhooks de Saída',meta:'Integração Meta Ads',users:'Equipe de Vendas',config:'Configurações'};
 
 function nav(id, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1024,9 +1160,61 @@ function copyText(text) {
 }
 
 // ═══════════════════════ INIT ═══════════════════════
-checkApiHealth();
-setInterval(checkApiHealth, 30000);
-loadDashboard();
+// Don't auto-load — wait for login
+checkAuthAndInit();
+
+// ═══════════════════════ USERS ═══════════════════════
+async function loadUsers() {
+  if (_currentUser?.role !== 'admin') return;
+  try {
+    const users = await api('/auth/users');
+    document.getElementById('usersGrid').innerHTML = users.map(u => `
+      <div class="user-card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent4));display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0">
+            ${u.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase()}
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:14px">${u.name}</div>
+            <div style="font-size:12px;color:var(--muted)">${u.email}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span class="user-role-badge ${u.role === 'admin' ? 'role-admin' : 'role-vendedor'}">${u.role === 'admin' ? '👑 Admin' : '💼 Vendedor'}</span>
+          <div style="display:flex;gap:6px">
+            ${u.id !== _currentUser?.id ? `<button class="btn btn-danger btn-sm" onclick="deactivateUser(${u.id},'${u.name}')">Remover</button>` : '<span style="font-size:11px;color:var(--muted)">Você</span>'}
+          </div>
+        </div>
+        <div style="margin-top:8px">
+          <span class="badge ${u.is_active ? 'badge-fechado' : 'badge-perdido'}">${u.is_active ? 'Ativo' : 'Inativo'}</span>
+        </div>
+      </div>`).join('') || '<div class="empty-state">Nenhum usuário</div>';
+  } catch(e) { showToast('Erro', e.message, true); }
+}
+
+async function submitCreateUser() {
+  const name = document.getElementById('u_name').value?.trim();
+  const email = document.getElementById('u_email').value?.trim();
+  const password = document.getElementById('u_password').value;
+  const role = document.getElementById('u_role').value;
+  if (!name || !email || !password) { showToast('Campos obrigatórios', 'Preencha todos os campos', true); return; }
+  if (password.length < 6) { showToast('Senha fraca', 'Mínimo 6 caracteres', true); return; }
+  try {
+    await api('/auth/users', {method:'POST', body:{name, email, password, role}});
+    closeModal('createUserModal');
+    showToast('Usuário criado! ✅', `${name} pode fazer login agora`);
+    loadUsers();
+  } catch(e) { showToast('Erro', e.message, true); }
+}
+
+async function deactivateUser(id, name) {
+  if (!confirm(`Remover acesso de ${name}?`)) return;
+  try {
+    await api(`/auth/users/${id}`, {method:'DELETE'});
+    showToast('Usuário removido', name);
+    loadUsers();
+  } catch(e) { showToast('Erro', e.message, true); }
+}
 </script>
 </body>
 </html>

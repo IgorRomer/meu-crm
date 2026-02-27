@@ -5,7 +5,8 @@ from typing import Optional
 import asyncio
 
 from database import get_db
-from models import Lead, Activity, LeadStatus, LeadSource
+from models import Lead, Activity, LeadStatus, LeadSource, User
+from services.auth import get_current_user
 from schemas import (
     LeadCreate, LeadUpdate, LeadOut, LeadWithActivities,
     ActivityCreate, ActivityOut, PaginatedLeads, LeadStageMove
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/leads", tags=["leads"])
 @router.get("/", response_model=PaginatedLeads)
 def list_leads(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, le=200),
     status: Optional[str] = None,
@@ -26,6 +28,9 @@ def list_leads(
     search: Optional[str] = None,
 ):
     q = db.query(Lead).filter(Lead.is_active == True)
+    # Admin vê todos; vendedor só vê os próprios
+    if current_user.role != "admin":
+        q = q.filter(Lead.owner_id == current_user.id)
 
     if status:
         q = q.filter(Lead.status == status)
@@ -60,8 +65,9 @@ async def create_lead(
     payload: LeadCreate,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    lead = Lead(**payload.model_dump())
+    lead = Lead(**payload.model_dump(), owner_id=current_user.id)
     db.add(lead)
     db.flush()
 

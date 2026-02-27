@@ -47,6 +47,23 @@ class NurtureStepType(str, enum.Enum):
     task      = "task"
 
 
+
+# ─── USER ─────────────────────────────────────────────────────────────────────
+
+class User(Base):
+    __tablename__ = "users"
+
+    id         = Column(Integer, primary_key=True)
+    name       = Column(String(200), nullable=False)
+    email      = Column(String(200), unique=True, nullable=False, index=True)
+    password   = Column(String(200), nullable=False)   # bcrypt hash
+    role       = Column(String(20), default="vendedor") # admin | vendedor
+    is_active  = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    leads = relationship("Lead", back_populates="owner")
+
+
 # ─── PIPELINE STAGE ───────────────────────────────────────────────────────────
 
 class PipelineStage(Base):
@@ -79,15 +96,17 @@ class Lead(Base):
     value        = Column(Float, default=0.0)
     currency     = Column(String(10), default="BRL")
     campaign     = Column(String(200))
+    owner_id     = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     ad_id        = Column(String(100))            # Meta ad reference
     form_id      = Column(String(100))            # Meta form reference
     notes        = Column(Text)
-    custom_fields = Column(JSON, default=dict)
+    custom_fields= Column(JSON, default={})
     is_active    = Column(Boolean, default=True)
     created_at   = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at   = Column(DateTime(timezone=True), onupdate=func.now())
 
     stage_rel    = relationship("PipelineStage", back_populates="leads")
+    owner        = relationship("User", back_populates="leads")
     activities   = relationship("Activity", back_populates="lead", cascade="all, delete-orphan")
     nurture_enrollments = relationship("NurtureEnrollment", back_populates="lead")
 
@@ -101,7 +120,7 @@ class Activity(Base):
     lead_id     = Column(Integer, ForeignKey("leads.id"), nullable=False, index=True)
     type        = Column(String(50))   # note, email, call, whatsapp, stage_change, webhook
     description = Column(Text)
-    activity_metadata = Column("metadata", JSON, default=dict)
+    metadata    = Column(JSON, default={})
     created_at  = Column(DateTime(timezone=True), server_default=func.now())
 
     lead = relationship("Lead", back_populates="activities")
@@ -118,8 +137,8 @@ class Webhook(Base):
     url          = Column(String(500), nullable=False)
     method       = Column(Enum(WebhookMethod), default=WebhookMethod.POST)
     secret       = Column(String(200))           # HMAC signing secret
-    events  = Column(JSON, default=list)       # list of WebhookEvent strings
-    headers = Column(JSON, default=dict)       # custom headers
+    events       = Column(JSON, default=[])       # list of WebhookEvent strings
+    headers      = Column(JSON, default={})       # custom headers
     is_active    = Column(Boolean, default=True)
     retry_count  = Column(Integer, default=3)
     timeout_sec  = Column(Integer, default=10)
@@ -187,7 +206,7 @@ class NurtureStep(Base):
     subject     = Column(String(300))           # for email
     body        = Column(Text)
     delay_hours = Column(Integer, default=0)    # wait delay
-    activity_metadata = Column("metadata", JSON, default=dict)
+    metadata    = Column(JSON, default={})
 
     sequence = relationship("NurtureSequence", back_populates="steps")
 
