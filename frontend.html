@@ -194,12 +194,29 @@
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
     <div class="login-logo">CRM PRO</div>
-    <div class="login-sub">Faça login para continuar</div>
-    <div class="login-form">
+    <div class="login-sub" id="loginSubText">Faça login para continuar</div>
+
+    <!-- LOGIN FORM -->
+    <div class="login-form" id="loginForm">
       <div class="form-group"><label>EMAIL</label><input id="loginEmail" type="email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <div class="form-group"><label>SENHA</label><input id="loginPassword" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <div class="login-err" id="loginErr"></div>
       <button class="login-btn" onclick="doLogin()" id="loginBtn">Entrar</button>
+      <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--muted)">
+        Primeiro acesso? <span style="color:var(--accent);cursor:pointer;font-weight:600" onclick="toggleRegister(true)">Criar conta admin</span>
+      </div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div class="login-form" id="registerForm" style="display:none">
+      <div class="form-group"><label>SEU NOME</label><input id="regName" placeholder="João Silva"></div>
+      <div class="form-group"><label>EMAIL</label><input id="regEmail" type="email" placeholder="seu@email.com"></div>
+      <div class="form-group"><label>SENHA</label><input id="regPassword" type="password" placeholder="Mínimo 6 caracteres"></div>
+      <div class="login-err" id="registerErr"></div>
+      <button class="login-btn" onclick="doRegister()" id="registerBtn">Criar Conta</button>
+      <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--muted)">
+        Já tem conta? <span style="color:var(--accent);cursor:pointer;font-weight:600" onclick="toggleRegister(false)">Fazer login</span>
+      </div>
     </div>
   </div>
 </div>
@@ -564,6 +581,44 @@ function showApp() {
   loadDashboard();
 }
 
+
+function toggleRegister(show) {
+  document.getElementById('loginForm').style.display = show ? 'none' : 'flex';
+  document.getElementById('registerForm').style.display = show ? 'flex' : 'none';
+  document.getElementById('loginSubText').textContent = show ? 'Crie sua conta de administrador' : 'Faça login para continuar';
+  document.getElementById('loginErr').textContent = '';
+  document.getElementById('registerErr').textContent = '';
+}
+
+async function doRegister() {
+  const name     = document.getElementById('regName').value.trim();
+  const email    = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  const errEl    = document.getElementById('registerErr');
+  const btn      = document.getElementById('registerBtn');
+  if (!name || !email || !password) { errEl.textContent = 'Preencha todos os campos'; return; }
+  if (password.length < 6) { errEl.textContent = 'Senha deve ter mínimo 6 caracteres'; return; }
+  btn.textContent = 'Criando...'; btn.disabled = true; errEl.textContent = '';
+  try {
+    await fetch(API_BASE + '/auth/register', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, email, password, role: 'admin'})
+    }).then(async res => {
+      if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Erro'); }
+      return res.json();
+    });
+    // Auto login after register
+    document.getElementById('loginEmail').value = email;
+    document.getElementById('loginPassword').value = password;
+    toggleRegister(false);
+    showToast('Conta criada! ✅', 'Fazendo login automaticamente...');
+    setTimeout(() => doLogin(), 800);
+  } catch(e) {
+    errEl.textContent = e.message;
+    btn.textContent = 'Criar Conta'; btn.disabled = false;
+  }
+}
 async function checkAuthAndInit() {
   if (!_token) { return; } // stay on login
   try {
