@@ -82,7 +82,7 @@ class Lead(Base):
     ad_id        = Column(String(100))            # Meta ad reference
     form_id      = Column(String(100))            # Meta form reference
     notes        = Column(Text)
-    custom_fields= Column(JSON, default={})
+    custom_fields = Column(JSON, default=dict)
     is_active    = Column(Boolean, default=True)
     created_at   = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at   = Column(DateTime(timezone=True), onupdate=func.now())
@@ -101,7 +101,7 @@ class Activity(Base):
     lead_id     = Column(Integer, ForeignKey("leads.id"), nullable=False, index=True)
     type        = Column(String(50))   # note, email, call, whatsapp, stage_change, webhook
     description = Column(Text)
-    metadata    = Column(JSON, default={})
+    activity_metadata = Column("metadata", JSON, default=dict)
     created_at  = Column(DateTime(timezone=True), server_default=func.now())
 
     lead = relationship("Lead", back_populates="activities")
@@ -118,8 +118,8 @@ class Webhook(Base):
     url          = Column(String(500), nullable=False)
     method       = Column(Enum(WebhookMethod), default=WebhookMethod.POST)
     secret       = Column(String(200))           # HMAC signing secret
-    events       = Column(JSON, default=[])       # list of WebhookEvent strings
-    headers      = Column(JSON, default={})       # custom headers
+    events  = Column(JSON, default=list)       # list of WebhookEvent strings
+    headers = Column(JSON, default=dict)       # custom headers
     is_active    = Column(Boolean, default=True)
     retry_count  = Column(Integer, default=3)
     timeout_sec  = Column(Integer, default=10)
@@ -187,7 +187,7 @@ class NurtureStep(Base):
     subject     = Column(String(300))           # for email
     body        = Column(Text)
     delay_hours = Column(Integer, default=0)    # wait delay
-    metadata    = Column(JSON, default={})
+    activity_metadata = Column("metadata", JSON, default=dict)
 
     sequence = relationship("NurtureSequence", back_populates="steps")
 
